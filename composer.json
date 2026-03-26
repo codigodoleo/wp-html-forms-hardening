@@ -19,7 +19,7 @@
     }
   },
   "extra": {
-    "laravel": {
+    "acorn": {
       "providers": [
         "CodigoDoOleo\\HtmlFormsHardening\\Providers\\HtmlFormsHardeningServiceProvider"
       ]
