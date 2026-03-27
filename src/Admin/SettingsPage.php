@@ -18,7 +18,8 @@ class SettingsPage
      */
     public static function registerMenu(): void
     {
-        $parent = (string) config('html-forms-hardening.admin_page.menu_parent', 'options-general.php');
+        $configuredParent = (string) config('html-forms-hardening.admin_page.menu_parent', 'options-general.php');
+        $parent = static::resolveParentMenu($configuredParent);
         $slug = (string) config('html-forms-hardening.admin_page.menu_slug', 'html-forms-hardening');
         $capability = (string) config('html-forms-hardening.admin_page.capability', 'manage_options');
 
@@ -30,6 +31,52 @@ class SettingsPage
             $slug,
             [static::class, 'renderPage']
         );
+    }
+
+    /**
+     * Resolve parent menu slug and fallback to Settings if the configured parent is unavailable.
+     */
+    protected static function resolveParentMenu(string $parent): string
+    {
+        $fallback = 'options-general.php';
+
+        if ($parent === '') {
+            return $fallback;
+        }
+
+        if (static::parentMenuExists($parent)) {
+            return $parent;
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * Check whether the parent menu slug exists in the current admin menu tree.
+     */
+    protected static function parentMenuExists(string $parent): bool
+    {
+        if ($parent === 'options-general.php') {
+            return true;
+        }
+
+        global $menu, $submenu;
+
+        if (is_array($submenu) && array_key_exists($parent, $submenu)) {
+            return true;
+        }
+
+        if (! is_array($menu)) {
+            return false;
+        }
+
+        foreach ($menu as $item) {
+            if (is_array($item) && isset($item[2]) && (string) $item[2] === $parent) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
