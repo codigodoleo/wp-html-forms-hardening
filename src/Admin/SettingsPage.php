@@ -9,7 +9,7 @@ class SettingsPage
      */
     public static function register(): void
     {
-        add_action('admin_menu', [static::class, 'registerMenu']);
+        add_action('admin_menu', [static::class, 'registerMenu'], 100);
         add_action('admin_init', [static::class, 'registerSettings']);
     }
 

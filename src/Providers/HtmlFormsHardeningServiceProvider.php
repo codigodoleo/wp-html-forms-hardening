@@ -34,6 +34,16 @@ class HtmlFormsHardeningServiceProvider extends ServiceProvider
         }
 
         $this->registerFilters();
+        add_action('init', [$this, 'bootstrapHtmlFormsRuntime'], 1);
+    }
+
+    /**
+     * Ensure HTML Forms runtime sees resolved keys even when initialized before Acorn providers.
+     */
+    public function bootstrapHtmlFormsRuntime(): void
+    {
+        $this->syncHtmlFormsSettingsOption();
+        $this->ensureRecaptchaHooks();
     }
 
     /**
@@ -97,6 +107,74 @@ class HtmlFormsHardeningServiceProvider extends ServiceProvider
 
             return $errorCode;
         }, 5, 3);
+    }
+
+    /**
+     * Persist resolved settings so HTML Forms can consume them outside the filter lifecycle.
+     */
+    protected function syncHtmlFormsSettingsOption(): void
+    {
+        if (! function_exists('get_option') || ! function_exists('update_option')) {
+            return;
+        }
+
+        $siteKey = $this->resolveRecaptchaKey('site');
+        $secretKey = $this->resolveRecaptchaKey('secret');
+
+        if ($siteKey === '' || $secretKey === '') {
+            return;
+        }
+
+        $settings = get_option('hf_settings', []);
+
+        if (! is_array($settings)) {
+            $settings = [];
+        }
+
+        if ((bool) config('html-forms-hardening.enable_nonce', true)) {
+            $settings['enable_nonce'] = 1;
+        }
+
+        if (! isset($settings['google_recaptcha']) || ! is_array($settings['google_recaptcha'])) {
+            $settings['google_recaptcha'] = [];
+        }
+
+        $currentSiteKey = trim((string) ($settings['google_recaptcha']['site_key'] ?? ''));
+        $currentSecretKey = trim((string) ($settings['google_recaptcha']['secret_key'] ?? ''));
+
+        if ($currentSiteKey === $siteKey && $currentSecretKey === $secretKey) {
+            return;
+        }
+
+        $settings['google_recaptcha']['site_key'] = $siteKey;
+        $settings['google_recaptcha']['secret_key'] = $secretKey;
+
+        update_option('hf_settings', $settings, true);
+    }
+
+    /**
+     * Register reCAPTCHA hooks when HTML Forms initialized before hardening filters were attached.
+     */
+    protected function ensureRecaptchaHooks(): void
+    {
+        if (! class_exists('HTML_Forms\\Admin\\Recaptcha') || ! function_exists('hf_get_settings')) {
+            return;
+        }
+
+        $settings = hf_get_settings();
+        $siteKey = trim((string) ($settings['google_recaptcha']['site_key'] ?? ''));
+        $secretKey = trim((string) ($settings['google_recaptcha']['secret_key'] ?? ''));
+
+        if ($siteKey === '' || $secretKey === '') {
+            return;
+        }
+
+        if (has_filter('hf_form_html') && has_filter('hf_validate_form')) {
+            return;
+        }
+
+        $recaptcha = new \HTML_Forms\Admin\Recaptcha();
+        $recaptcha->hook();
     }
 
     /**
