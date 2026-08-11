@@ -1,3 +1,9 @@
+## [0.1.2](https://github.com/hekivo/wp-html-forms-hardening/compare/v0.1.1...v0.1.2) (2026-08-11)
+
+### Bug Fixes
+
+* aceita Acorn 6.x além do 5.x ([5be317b](https://github.com/hekivo/wp-html-forms-hardening/commit/5be317b8a0c658ba3e3e586b8f670c39b6eadabe))
+
 ## [0.1.1](https://github.com/codigodoleo/wp-html-forms-hardening/compare/v0.1.0...v0.1.1) (2026-03-27)
 
 ### Bug Fixes
